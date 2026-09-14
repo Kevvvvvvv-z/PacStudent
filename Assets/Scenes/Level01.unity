@@ -360,6 +360,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2100000002}
   - component: {fileID: 2100000003}
+  - component: {fileID: 2100000004}
   m_Layer: 0
   m_Name: '[AudioManager]'
   m_TagString: Untagged
@@ -480,7 +481,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  - component: {fileID: 2100000004}
 
 --- !u!114 &2100000004
 MonoBehaviour:
