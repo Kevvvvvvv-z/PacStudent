@@ -111,7 +111,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage: 
+  m_WarningMessage:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -223,11 +223,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3e30e38bdfd76c468ae898c9baa8576, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PacStudentController
   animator: {fileID: 2104879454160748318}
   movementAudioSource: {fileID: 4154067073546919988}
-  moveSpeed: 3
+  automaticAssessmentLoop: 1
+  moveSpeed: 5
+  gameplayStartCell: {x: 1, y: 1}
   waypoints:
   - {x: 1, y: -1}
   - {x: 6, y: -1}
