@@ -16704,6 +16704,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4718998459714594045, guid: 64caf1f6949e20e40b58e00750ea80cb, type: 3}
   m_PrefabInstance: {fileID: 865075315}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &867220818
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 867220820}
+  - component: {fileID: 867220819}
+  m_Layer: 0
+  m_Name: '[LevelGenerator]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &867220819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867220818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f1f7b7937761e4ca27a9510acbc9c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
+  outsideCornerPrefab: {fileID: 2429353874675140714, guid: dc54e2f98a65d934983f439a96d70e53, type: 3}
+  outsideWallPrefab: {fileID: 4631780023967563393, guid: 64caf1f6949e20e40b58e00750ea80cb, type: 3}
+  insideCornerPrefab: {fileID: 1854106238414378122, guid: 1283ab5d65896714586c7c1eab5137aa, type: 3}
+  insideWallPrefab: {fileID: 5523364002380957552, guid: 48ee52f9320ef7e4db215e38043b6481, type: 3}
+  pelletPrefab: {fileID: 7867331479102685629, guid: 6008022980896f64592f15c7e12741eb, type: 3}
+  powerPelletPrefab: {fileID: 976582098434114170, guid: edc144cac13449545b994291fac5d1a2, type: 3}
+  tJunctionPrefab: {fileID: 360319588900580910, guid: c5a90ca77d77d48429abbc1964f79edf, type: 3}
+  ghostExitGatePrefab: {fileID: 5604524653192748268, guid: d3d90e89e9600484491eabebb70c914d, type: 3}
+  cameraPadding: 1
+--- !u!4 &867220820
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867220818}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &867654121
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -43011,3 +43064,4 @@ SceneRoots:
   - {fileID: 1047549023}
   - {fileID: 1376544882}
   - {fileID: 316690176}
+  - {fileID: 867220820}
