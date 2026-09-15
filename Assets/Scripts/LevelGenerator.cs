@@ -335,9 +335,9 @@ public class LevelGenerator : MonoBehaviour
 
         Direction baseConnections = tileType switch
         {
-            1 => Direction.Left | Direction.Down,
+            1 => Direction.Right | Direction.Down,
             2 => Direction.Left | Direction.Right,
-            3 => Direction.Left | Direction.Down,
+            3 => Direction.Right | Direction.Down,
             4 => Direction.Left | Direction.Right,
             7 => Direction.Left | Direction.Right | Direction.Down,
             8 => Direction.Left | Direction.Right,
