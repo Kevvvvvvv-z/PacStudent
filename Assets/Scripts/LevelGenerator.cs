@@ -355,6 +355,20 @@ public class LevelGenerator : MonoBehaviour
             int missing = CountBits(rotated & ~neighbors);
             int score = connected * 10 - missing * 30;
 
+            // Adjacent walls can belong to the opposite edge of a thick T shape.
+            // Break ties by following the corner around a non-wall diagonal.
+            if (tileType == 1 || tileType == 3)
+            {
+                int diagonalRow = row + ((rotated & Direction.Down) != 0 ? 1 : -1);
+                int diagonalColumn = column + ((rotated & Direction.Right) != 0 ? 1 : -1);
+                if (diagonalRow >= 0 && diagonalRow < map.GetLength(0) &&
+                    diagonalColumn >= 0 && diagonalColumn < map.GetLength(1) &&
+                    !IsStructural(map[diagonalRow, diagonalColumn]))
+                {
+                    score += 5;
+                }
+            }
+
             if (score > bestScore)
             {
                 bestScore = score;
