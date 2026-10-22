@@ -62,9 +62,9 @@ public class AudioManager : MonoBehaviour
         }
 
         musicSource.clip = introBGM;
-        musicSource.loop = false;
+        musicSource.loop = true;
         musicSource.Play();
-        introEndTime = Time.time + Mathf.Min(introBGM.length, 3f);
+        introEndTime = Time.time + 4f;
         introPlaying = true;
     }
 
