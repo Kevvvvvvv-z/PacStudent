@@ -55,16 +55,22 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
+        PlayIntro(4f);
+    }
+
+    public void PlayIntro(float duration)
+    {
+        requestedMode = GhostMusicMode.Normal;
         if (introBGM == null)
         {
+            introPlaying = false;
             PlayRequestedMusic();
             return;
         }
-
         musicSource.clip = introBGM;
         musicSource.loop = true;
         musicSource.Play();
-        introEndTime = Time.time + 4f;
+        introEndTime = Time.time + duration;
         introPlaying = true;
     }
 
