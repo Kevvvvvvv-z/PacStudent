@@ -40,8 +40,7 @@ public class GameManager : MonoBehaviour
     private bool bonusFruitWasSpawned;
     private GameObject bonusFruit;
     private float bonusFruitEndTime;
-    private GUIStyle hudStyle;
-    private GUIStyle centreStyle;
+    private float elapsedTime;
 
     public static GameManager Instance { get; private set; }
     public bool ActorsCanMove => state == GameState.Playing;
@@ -51,6 +50,9 @@ public class GameManager : MonoBehaviour
     public GameState State => state;
     public int Score => score;
     public int Lives => lives;
+    public float ElapsedTime => elapsedTime;
+    public string CountdownText => countdownText;
+    public bool IsGameOver => state == GameState.Won || state == GameState.Lost;
 
     private void Awake()
     {
@@ -78,6 +80,7 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         ReadStateInput();
+        if (state == GameState.Playing || state == GameState.Dying) elapsedTime += Time.deltaTime;
 
         if (state != GameState.Playing)
         {
@@ -113,6 +116,7 @@ public class GameManager : MonoBehaviour
     private IEnumerator StartCountdown()
     {
         state = GameState.Countdown;
+        AudioManager.Instance?.PlayIntro(4f);
         foreach (string value in new[] { "3", "2", "1", "GO!" })
         {
             countdownText = value;
@@ -139,6 +143,7 @@ public class GameManager : MonoBehaviour
         StopAllCoroutines();
         DestroyBonusFruit();
         score = 0;
+        elapsedTime = 0f;
         lives = startingLives;
         powerEndTime = 0f;
 
@@ -178,6 +183,7 @@ public class GameManager : MonoBehaviour
         if (remaining == 0)
         {
             state = GameState.Won;
+            StartCoroutine(ReturnAfterGameOver());
             AudioManager.Instance?.SetGhostMode(AudioManager.GhostMusicMode.Normal);
             return;
         }
@@ -206,7 +212,7 @@ public class GameManager : MonoBehaviour
 
         if (keyboard.escapeKey.wasPressedThisFrame)
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene("StartScene");
+            ExitToMenu();
             return;
         }
 
@@ -214,10 +220,6 @@ public class GameManager : MonoBehaviour
             (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame))
         {
             BeginGame();
-        }
-        else if ((state == GameState.Won || state == GameState.Lost) && keyboard.rKey.wasPressedThisFrame)
-        {
-            RestartGame();
         }
     }
 
@@ -268,6 +270,7 @@ public class GameManager : MonoBehaviour
         if (lives <= 0)
         {
             state = GameState.Lost;
+            StartCoroutine(ReturnAfterGameOver());
         }
         else
         {
@@ -349,40 +352,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnGUI()
+    public void ExitToMenu()
     {
-        if (hudStyle == null)
-        {
-            hudStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.Max(18, Screen.height / 36),
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white }
-            };
-            centreStyle = new GUIStyle(hudStyle)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = Mathf.Max(24, Screen.height / 24)
-            };
-        }
+        if (IsGameOver || state == GameState.Countdown) return;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("StartScene");
+    }
 
-        GUI.Label(new Rect(18f, 10f, 520f, 40f), $"SCORE  {score:000000}     LIVES  {lives}", hudStyle);
-        GUI.Label(new Rect(18f, Screen.height - 42f, 600f, 34f), "Move: Arrow keys / WASD    |    Esc: Menu", hudStyle);
-
-        string message = state switch
-        {
-            GameState.Countdown => countdownText,
-            GameState.Waiting => "READY!",
-            GameState.Dying => "OUCH!",
-            GameState.Won => $"YOU CLEARED THE MAZE!\nScore: {score}\nPress R to restart",
-            GameState.Lost => $"GAME OVER\nScore: {score}\nPress R to restart",
-            _ => string.Empty
-        };
-
-        if (!string.IsNullOrEmpty(message))
-        {
-            GUI.Box(new Rect(Screen.width / 2f - 210f, Screen.height / 2f - 78f, 420f, 156f), GUIContent.none);
-            GUI.Label(new Rect(Screen.width / 2f - 200f, Screen.height / 2f - 70f, 400f, 140f), message, centreStyle);
-        }
+    private IEnumerator ReturnAfterGameOver()
+    {
+        yield return new WaitForSeconds(3f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("StartScene");
     }
 }
