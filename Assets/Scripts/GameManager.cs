@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     public enum GameState
     {
         Waiting,
+        Countdown,
         Playing,
         Dying,
         Won,
@@ -22,7 +23,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Rules")]
     [SerializeField, Min(1)] private int startingLives = 3;
-    [SerializeField, Min(1f)] private float powerDuration = 8f;
+    [SerializeField, Min(1f)] private float powerDuration = 10f;
     [SerializeField, Min(0.1f)] private float collisionDistance = 0.48f;
 
     [Header("Bonus fruit")]
@@ -35,7 +36,7 @@ public class GameManager : MonoBehaviour
     private int lives;
     private int initialPelletCount;
     private float powerEndTime;
-    private int ghostEatChain;
+    private string countdownText;
     private bool bonusFruitWasSpawned;
     private GameObject bonusFruit;
     private float bonusFruitEndTime;
@@ -71,7 +72,7 @@ public class GameManager : MonoBehaviour
         lives = startingLives;
         initialPelletCount = LevelGenerator.Instance == null ? 0 : LevelGenerator.Instance.RemainingPellets;
         PrepareActors();
-        state = GameState.Waiting;
+        StartCoroutine(StartCountdown());
     }
 
     private void Update()
@@ -86,7 +87,7 @@ public class GameManager : MonoBehaviour
         if (!IsPowerActive && powerEndTime > 0f)
         {
             powerEndTime = 0f;
-            ghostEatChain = 0;
+
         }
 
         UpdateBonusFruit();
@@ -109,6 +110,18 @@ public class GameManager : MonoBehaviour
         bonusFruitSprite = assignedBonusFruit;
     }
 
+    private IEnumerator StartCountdown()
+    {
+        state = GameState.Countdown;
+        foreach (string value in new[] { "3", "2", "1", "GO!" })
+        {
+            countdownText = value;
+            yield return new WaitForSeconds(1f);
+        }
+        state = GameState.Waiting;
+        BeginGame();
+    }
+
     public void BeginGame()
     {
         if (state != GameState.Waiting)
@@ -128,13 +141,13 @@ public class GameManager : MonoBehaviour
         score = 0;
         lives = startingLives;
         powerEndTime = 0f;
-        ghostEatChain = 0;
+
         bonusFruitWasSpawned = false;
 
         LevelGenerator.Instance?.GenerateLevel();
         initialPelletCount = LevelGenerator.Instance == null ? 0 : LevelGenerator.Instance.RemainingPellets;
         PrepareActors();
-        state = GameState.Waiting;
+        StartCoroutine(StartCountdown());
         AudioManager.Instance?.SetGhostMode(AudioManager.GhostMusicMode.Normal);
     }
 
@@ -151,7 +164,7 @@ public class GameManager : MonoBehaviour
         if (isPowerPellet)
         {
             powerEndTime = Time.time + powerDuration;
-            ghostEatChain = 0;
+
             foreach (GhostAgent ghost in ghosts)
             {
                 if (ghost != null && !ghost.IsDead)
@@ -191,6 +204,12 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        if (keyboard.escapeKey.wasPressedThisFrame)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("StartScene");
+            return;
+        }
+
         if (state == GameState.Waiting &&
             (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame))
         {
@@ -223,8 +242,7 @@ public class GameManager : MonoBehaviour
 
             if (ghost.IsFrightened)
             {
-                ghostEatChain++;
-                score += 200 * (1 << Mathf.Min(ghostEatChain - 1, 3));
+                score += 300;
                 ghost.BecomeDead();
                 AudioManager.Instance?.PlayGhostEaten();
             }
@@ -240,7 +258,7 @@ public class GameManager : MonoBehaviour
     {
         state = GameState.Dying;
         powerEndTime = 0f;
-        ghostEatChain = 0;
+
         DestroyBonusFruit();
         player?.PlayDeathAnimation();
         AudioManager.Instance?.PlayDeath();
@@ -254,7 +272,7 @@ public class GameManager : MonoBehaviour
         else
         {
             PrepareActors();
-            state = GameState.Waiting;
+            state = GameState.Playing;
         }
 
         AudioManager.Instance?.SetGhostMode(AudioManager.GhostMusicMode.Normal);
@@ -316,7 +334,7 @@ public class GameManager : MonoBehaviour
 
         if (player != null && player.CurrentCell == bonusFruitCell)
         {
-            score += 500;
+            score += 100;
             AudioManager.Instance?.PlayBonusFruit();
             DestroyBonusFruit();
         }
@@ -349,11 +367,12 @@ public class GameManager : MonoBehaviour
         }
 
         GUI.Label(new Rect(18f, 10f, 520f, 40f), $"SCORE  {score:000000}     LIVES  {lives}", hudStyle);
-        GUI.Label(new Rect(18f, Screen.height - 42f, 600f, 34f), "Move: Arrow keys / WASD", hudStyle);
+        GUI.Label(new Rect(18f, Screen.height - 42f, 600f, 34f), "Move: Arrow keys / WASD    |    Esc: Menu", hudStyle);
 
         string message = state switch
         {
-            GameState.Waiting => "READY!\nPress ENTER or SPACE",
+            GameState.Countdown => countdownText,
+            GameState.Waiting => "READY!",
             GameState.Dying => "OUCH!",
             GameState.Won => $"YOU CLEARED THE MAZE!\nScore: {score}\nPress R to restart",
             GameState.Lost => $"GAME OVER\nScore: {score}\nPress R to restart",

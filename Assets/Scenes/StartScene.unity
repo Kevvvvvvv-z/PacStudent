@@ -1369,7 +1369,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: LEVEL 1
+  m_Text: PLAY
 --- !u!222 &198325042
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3019,14 +3019,14 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 88
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: PacStudent
+  m_Text: BEETLE RUN
 --- !u!222 &794934896
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5165,7 +5165,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 38
+    m_FontSize: 30
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
@@ -5176,7 +5176,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: BEETLE RUN
+  m_Text: A Garden-Sized Getaway
 --- !u!222 &1397700288
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5698,7 +5698,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 20
+    m_FontSize: 24
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -5709,7 +5709,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: A GARDEN-SIZED GETAWAY
+  m_Text: PacStudent
 --- !u!222 &1530028656
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6284,7 +6284,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: THE ORIGINAL MAZE
+  m_Text: LEVEL 1  /  THE ORIGINAL MAZE
 --- !u!222 &1685732191
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7865,7 +7865,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: A NEW ADVENTURE
+  m_Text: COMING LATER
 --- !u!222 &1968661353
 CanvasRenderer:
   m_ObjectHideFlags: 0

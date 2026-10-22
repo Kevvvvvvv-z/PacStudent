@@ -41,6 +41,7 @@ public class LevelGenerator : MonoBehaviour
     private readonly Dictionary<int, GameObject> prefabByType = new Dictionary<int, GameObject>();
     private readonly Dictionary<Vector2Int, GameObject> pelletObjects = new Dictionary<Vector2Int, GameObject>();
     private int[,] fullMap;
+    private bool[,] walkable;
     private Vector2 tileSize = Vector2.one;
 
     public static LevelGenerator Instance { get; private set; }
@@ -83,6 +84,7 @@ public class LevelGenerator : MonoBehaviour
         BuildPrefabLookup();
         tileSize = GetTileSize();
         fullMap = CreateFullMap();
+        BuildWalkableCells();
         pelletObjects.Clear();
 
         var levelRoot = new GameObject("[Level01_Procedural]");
@@ -121,13 +123,50 @@ public class LevelGenerator : MonoBehaviour
             return false;
         }
 
-        int tileType = fullMap[cell.y, cell.x];
-        return tileType == 5 || tileType == 6;
+        return walkable[cell.y, cell.x];
     }
 
     public bool IsGhostWalkable(Vector2Int cell)
     {
-        return IsPlayerWalkable(cell);
+        // Ghosts cannot use the side teleporters or enter the closed spawn pen.
+        return IsPlayerWalkable(cell) && cell.x > 0 && cell.x < Width - 1;
+    }
+
+    public bool TryGetPlayerStep(Vector2Int from, Vector2Int direction, out Vector2Int target)
+    {
+        target = from + direction;
+        if (direction == Vector2Int.zero) return false;
+        if (from.y == Height / 2)
+        {
+            if (target.x < 0) target.x = Width - 1;
+            else if (target.x >= Width) target.x = 0;
+        }
+        return IsPlayerWalkable(target);
+    }
+
+    private void BuildWalkableCells()
+    {
+        walkable = new bool[Height, Width];
+        var queue = new Queue<Vector2Int>();
+        for (int row = 0; row < Height; row++)
+        for (int column = 0; column < Width; column++)
+        {
+            if (fullMap[row, column] != 5 && fullMap[row, column] != 6) continue;
+            walkable[row, column] = true;
+            queue.Enqueue(new Vector2Int(column, row));
+        }
+        Vector2Int[] steps = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
+        while (queue.Count > 0)
+        {
+            Vector2Int cell = queue.Dequeue();
+            foreach (Vector2Int step in steps)
+            {
+                Vector2Int next = cell + step;
+                if (!IsInside(next) || walkable[next.y, next.x] || fullMap[next.y, next.x] != 0) continue;
+                walkable[next.y, next.x] = true;
+                queue.Enqueue(next);
+            }
+        }
     }
 
     public Vector3 CellToWorld(Vector2Int cell, float z = -0.1f)
