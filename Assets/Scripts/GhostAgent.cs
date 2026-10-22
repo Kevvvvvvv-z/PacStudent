@@ -26,6 +26,7 @@ public class GhostAgent : MonoBehaviour
     private float segmentDuration;
     private bool segmentActive;
     private bool dead;
+    private bool leavingPen;
     private int playingState;
 
     public bool IsDead => dead;
@@ -53,7 +54,8 @@ public class GhostAgent : MonoBehaviour
             return;
         }
 
-        AdvanceMovement(Time.deltaTime);
+        if (dead) ReturnToPen(Time.deltaTime);
+        else AdvanceMovement(Time.deltaTime);
     }
 
     public void Configure(int index, Vector2Int spawnCell, float speed)
@@ -67,11 +69,12 @@ public class GhostAgent : MonoBehaviour
     public void ResetToStart()
     {
         LevelGenerator level = LevelGenerator.Instance;
-        currentCell = level == null ? startCell : level.FindNearestWalkable(startCell);
+        currentCell = startCell;
         targetCell = currentCell;
         currentDirection = ghostIndex % 2 == 0 ? Vector2Int.left : Vector2Int.right;
         segmentActive = false;
         dead = false;
+        leavingPen = true;
         transform.position = level == null
             ? new Vector3(currentCell.x, -currentCell.y, -0.15f)
             : level.CellToWorld(currentCell, -0.15f);
@@ -124,18 +127,26 @@ public class GhostAgent : MonoBehaviour
             currentCell = targetCell;
             segmentActive = false;
 
-            if (dead && currentCell == LevelGenerator.Instance.FindNearestWalkable(startCell))
-            {
-                dead = false;
-                playingState = 0;
-            }
-
             safety++;
         }
     }
 
     private bool BeginNextSegment()
     {
+        if (leavingPen)
+        {
+            int gateColumn = ghostIndex % 2 == 0 ? 13 : 14;
+            int exitRow = ghostIndex % 2 == 0 ? 11 : 17;
+            if (currentCell.y == exitRow) leavingPen = false;
+            else
+            {
+                Vector2Int next = currentCell.x != gateColumn
+                    ? currentCell + new Vector2Int(gateColumn > currentCell.x ? 1 : -1, 0)
+                    : currentCell + new Vector2Int(0, exitRow > currentCell.y ? 1 : -1);
+                BeginSegment(next);
+                return true;
+            }
+        }
         List<Vector2Int> available = GetAvailableDirections();
         if (available.Count == 0)
         {
@@ -149,17 +160,41 @@ public class GhostAgent : MonoBehaviour
         }
 
         currentDirection = ChooseDirection(available);
-        targetCell = currentCell + currentDirection;
+        BeginSegment(currentCell + currentDirection);
+        return true;
+    }
+
+    private void BeginSegment(Vector2Int next)
+    {
+        currentDirection = next - currentCell;
+        targetCell = next;
         LevelGenerator level = LevelGenerator.Instance;
         segmentStart = level.CellToWorld(currentCell, -0.15f);
         segmentEnd = level.CellToWorld(targetCell, -0.15f);
         segmentElapsed = 0f;
-
-        float stateSpeed = IsFrightened ? moveSpeed * 0.72f : dead ? moveSpeed * 1.45f : moveSpeed;
-        segmentDuration = Vector3.Distance(segmentStart, segmentEnd) / Mathf.Max(0.01f, stateSpeed);
+        float stateSpeed = IsFrightened ? moveSpeed * 0.5f : moveSpeed;
+        segmentDuration = Vector3.Distance(segmentStart, segmentEnd) / stateSpeed;
         segmentActive = true;
         PlayAnimation(currentDirection);
-        return true;
+    }
+
+    private void ReturnToPen(float deltaTime)
+    {
+        Vector3 destination = LevelGenerator.Instance.CellToWorld(startCell, -0.15f);
+        float distance = Vector3.Distance(transform.position, destination);
+        float travel = moveSpeed * 0.5f * deltaTime;
+        if (distance > travel && distance > 0f)
+        {
+            transform.position = Vector3.Lerp(transform.position, destination, travel / distance);
+            return;
+        }
+        transform.position = destination;
+        currentCell = targetCell = startCell;
+        segmentActive = false;
+        dead = false;
+        leavingPen = true;
+        playingState = 0;
+        PlayAnimation(currentDirection);
     }
 
     private List<Vector2Int> GetAvailableDirections()
@@ -256,7 +291,7 @@ public class GhostAgent : MonoBehaviour
         {
             stateName = "Dead";
         }
-        else if (IsFrightened && GameManager.Instance.PowerTimeRemaining <= 2f)
+        else if (IsFrightened && GameManager.Instance.PowerTimeRemaining <= 3f)
         {
             stateName = "Recovering";
         }
