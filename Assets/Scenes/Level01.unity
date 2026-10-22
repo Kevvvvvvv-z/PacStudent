@@ -42357,13 +42357,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   introBGM: {fileID: 8300000, guid: ca90f297efd8ff84280ea883d7e3f7e4, type: 3}
   ghostNormalBGM: {fileID: 8300000, guid: 5057fca9f25c9df42ad0315446448534, type: 3}
-  ghostScaredBGM: {fileID: 0}
-  ghostDeadBGM: {fileID: 0}
-  eatPelletSFX: {fileID: 0}
-  eatGhostSFX: {fileID: 0}
-  eatBonusFruitSFX: {fileID: 0}
-  hitWallSFX: {fileID: 0}
-  deathSFX: {fileID: 0}
+  ghostScaredBGM: {fileID: 8300000, guid: 21c66228d5f791d44bef17bbfde87f1e, type: 3}
+  ghostDeadBGM: {fileID: 8300000, guid: cd26de52baa0b554aa6fd16dddea8d46, type: 3}
+  eatPelletSFX: {fileID: 8300000, guid: b33ee1e3421bbfc41ae8b41bb4c36512, type: 3}
+  eatGhostSFX: {fileID: 8300000, guid: fd03ed9f7ece1834997297bb3168d84f, type: 3}
+  eatBonusFruitSFX: {fileID: 8300000, guid: 082462dae08302e4fade629374276488, type: 3}
+  hitWallSFX: {fileID: 8300000, guid: 4137c990bc6b01247aadab8f20468c6e, type: 3}
+  deathSFX: {fileID: 8300000, guid: 1f07a9da9589fc740875c5cb7aa55766, type: 3}
 --- !u!1001 &2111612960
 PrefabInstance:
   m_ObjectHideFlags: 0
