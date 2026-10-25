@@ -6,311 +6,177 @@ public class GhostController : MonoBehaviour
 {
     [SerializeField, Range(0, 3)] private int ghostIndex;
     [SerializeField] private Animator animator;
-    [SerializeField] private Vector2Int startCell = new Vector2Int(6, 14);
-    [SerializeField, Min(0.01f)] private float moveSpeed = 4f;
-
-    private static readonly Vector2Int[] Directions =
-    {
-        new Vector2Int(0, -1),
-        Vector2Int.left,
-        new Vector2Int(0, 1),
-        Vector2Int.right
-    };
-
-    private Vector2Int currentCell;
-    private Vector2Int targetCell;
-    private Vector2Int currentDirection;
-    private Vector3 segmentStart;
-    private Vector3 segmentEnd;
-    private float segmentElapsed;
-    private float segmentDuration;
-    private bool segmentActive;
-    private bool dead;
-    private bool leavingPen;
+    [SerializeField] private Vector2Int startCell = new Vector2Int(12, 14);
+    [SerializeField, Min(.01f)] private float moveSpeed = 4.5f;
+    private static readonly Vector2Int[] Directions = { new Vector2Int(0,-1), Vector2Int.right, new Vector2Int(0,1), Vector2Int.left };
+    private Vector2Int currentCell, targetCell, currentDirection;
+    private Vector3 segmentStart, segmentEnd;
+    private float segmentElapsed, segmentDuration;
+    private bool segmentActive, dead, leavingPen;
     private int playingState;
-
+    private readonly List<Vector2Int> outerCircuit = new List<Vector2Int>();
+    private int circuitIndex = -1;
     public bool IsDead => dead;
     public bool IsFrightened => !dead && GameManager.Instance != null && GameManager.Instance.IsPowerActive;
     public Vector2Int CurrentCell => currentCell;
+    public float NormalSpeed => GameManager.Instance != null && GameManager.Instance.Player != null ? GameManager.Instance.Player.MoveSpeed * .9f : moveSpeed;
+    public float StateSpeed => NormalSpeed * (dead || IsFrightened ? .5f : 1f);
 
-    private void Awake()
-    {
-        if (animator == null)
-        {
-            animator = GetComponent<Animator>();
-        }
-    }
-
-    private void Start()
-    {
-        ResetToStart();
-    }
-
+    private void Awake() { if (animator == null) animator = GetComponent<Animator>(); }
+    private void Start() => ResetToStart();
     private void Update()
     {
-        GameManager manager = GameManager.Instance;
-        if (manager == null || !manager.ActorsCanMove || LevelGenerator.Instance == null)
-        {
-            return;
-        }
-
-        if (dead) ReturnToPen(Time.deltaTime);
-        else AdvanceMovement(Time.deltaTime);
+        var manager = GameManager.Instance;
+        bool moving = manager != null && manager.ActorsCanMove && LevelGenerator.Instance != null;
+        if (animator != null) animator.speed = moving ? 1f : 0f;
+        if (!moving) return;
+        PlayAnimation(currentDirection);
+        if (dead) ReturnToPen(Time.deltaTime); else AdvanceMovement(Time.deltaTime);
     }
-
     public void Configure(int index, Vector2Int spawnCell, float speed)
     {
-        ghostIndex = Mathf.Clamp(index, 0, 3);
-        startCell = spawnCell;
-        moveSpeed = Mathf.Max(0.01f, speed);
-        animator = GetComponent<Animator>();
+        ghostIndex = Mathf.Clamp(index,0,3);startCell=spawnCell;moveSpeed=speed;animator=GetComponent<Animator>();
     }
-
     public void ResetToStart()
     {
-        LevelGenerator level = LevelGenerator.Instance;
-        currentCell = startCell;
-        targetCell = currentCell;
-        currentDirection = ghostIndex % 2 == 0 ? Vector2Int.left : Vector2Int.right;
-        segmentActive = false;
-        dead = false;
-        leavingPen = true;
-        transform.position = level == null
-            ? new Vector3(currentCell.x, -currentCell.y, -0.15f)
-            : level.CellToWorld(currentCell, -0.15f);
-        playingState = 0;
-        PlayAnimation(currentDirection);
+        currentCell=targetCell=startCell;
+        currentDirection=ghostIndex%2==0?Vector2Int.left:Vector2Int.right;
+        segmentActive=dead=false;leavingPen=true;circuitIndex=-1;
+        transform.position=LevelGenerator.Instance.CellToWorld(startCell,-.15f);
+        playingState=0;PlayAnimation(currentDirection);
     }
-
-    public void BecomeDead()
-    {
-        dead = true;
-        segmentActive = false;
-        playingState = 0;
-        PlayAnimation(currentDirection);
-    }
-
-    public void RefreshStateAnimation()
-    {
-        playingState = 0;
-        PlayAnimation(currentDirection);
-    }
+    public void BecomeDead() { dead=true;segmentActive=false;circuitIndex=-1;PlayAnimation(currentDirection); }
+    public void RefreshStateAnimation() => PlayAnimation(currentDirection);
 
     private void AdvanceMovement(float deltaTime)
     {
-        if (deltaTime <= 0f)
+        float remaining = deltaTime;
+        int completed = 0;
+        while (remaining > 0 && completed < 16)
         {
-            return;
-        }
-
-        float remainingTime = deltaTime;
-        int safety = 0;
-        while (remainingTime > 0f && safety < 4)
-        {
-            if (!segmentActive && !BeginNextSegment())
-            {
-                return;
-            }
-
-            float timeUntilEnd = segmentDuration - segmentElapsed;
-            float consumed = Mathf.Min(remainingTime, timeUntilEnd);
-            segmentElapsed += consumed;
-            remainingTime -= consumed;
-            transform.position = Vector3.Lerp(segmentStart, segmentEnd, Mathf.Clamp01(segmentElapsed / segmentDuration));
-
-            if (segmentElapsed + Mathf.Epsilon < segmentDuration)
-            {
-                break;
-            }
-
-            transform.position = segmentEnd;
-            currentCell = targetCell;
-            segmentActive = false;
-
-            safety++;
+            if (!segmentActive && !BeginNextSegment()) return;
+            // Preserve position when a power pellet changes speed during a tween.
+            float progress = segmentDuration > 0 ? segmentElapsed / segmentDuration : 0;
+            segmentDuration = Vector3.Distance(segmentStart,segmentEnd) / StateSpeed;
+            segmentElapsed = progress * segmentDuration;
+            float consumed = Mathf.Min(remaining,segmentDuration-segmentElapsed);
+            segmentElapsed += consumed; remaining -= consumed;
+            transform.position = Vector3.Lerp(segmentStart,segmentEnd,Mathf.Clamp01(segmentElapsed/segmentDuration));
+            if (segmentElapsed + .000001f < segmentDuration) break;
+            transform.position=segmentEnd;currentCell=targetCell;segmentActive=false;completed++;
         }
     }
-
     private bool BeginNextSegment()
     {
         if (leavingPen)
         {
-            int gateColumn = ghostIndex % 2 == 0 ? 13 : 14;
-            int exitRow = ghostIndex % 2 == 0 ? 11 : 17;
-            if (currentCell.y == exitRow) leavingPen = false;
+            int column=ghostIndex%2==0?13:14, row=ghostIndex%2==0?11:17;
+            if(currentCell.y==row)leavingPen=false;
             else
             {
-                Vector2Int next = currentCell.x != gateColumn
-                    ? currentCell + new Vector2Int(gateColumn > currentCell.x ? 1 : -1, 0)
-                    : currentCell + new Vector2Int(0, exitRow > currentCell.y ? 1 : -1);
-                BeginSegment(next);
-                return true;
+                Vector2Int next=currentCell.x!=column?currentCell+new Vector2Int(column>currentCell.x?1:-1,0):currentCell+new Vector2Int(0,row>currentCell.y?1:-1);
+                BeginSegment(next);return true;
             }
         }
-        List<Vector2Int> available = GetAvailableDirections();
-        if (available.Count == 0)
-        {
-            return false;
-        }
-
-        Vector2Int reverse = -currentDirection;
-        if (available.Count > 1)
-        {
-            available.Remove(reverse);
-        }
-
-        currentDirection = ChooseDirection(available);
-        BeginSegment(currentCell + currentDirection);
-        return true;
+        var available=GetAvailableDirections();
+        if(available.Count==0)return false;
+        if(available.Count>1)available.Remove(-currentDirection);
+        BeginSegment(currentCell+ChooseDirection(available));return true;
     }
-
     private void BeginSegment(Vector2Int next)
     {
-        currentDirection = next - currentCell;
-        targetCell = next;
-        LevelGenerator level = LevelGenerator.Instance;
-        segmentStart = level.CellToWorld(currentCell, -0.15f);
-        segmentEnd = level.CellToWorld(targetCell, -0.15f);
-        segmentElapsed = 0f;
-        float stateSpeed = IsFrightened ? moveSpeed * 0.5f : moveSpeed;
-        segmentDuration = Vector3.Distance(segmentStart, segmentEnd) / stateSpeed;
-        segmentActive = true;
-        PlayAnimation(currentDirection);
+        currentDirection=next-currentCell;targetCell=next;
+        segmentStart=LevelGenerator.Instance.CellToWorld(currentCell,-.15f);segmentEnd=LevelGenerator.Instance.CellToWorld(next,-.15f);
+        segmentElapsed=0;segmentDuration=Vector3.Distance(segmentStart,segmentEnd)/StateSpeed;segmentActive=true;PlayAnimation(currentDirection);
     }
-
     private void ReturnToPen(float deltaTime)
     {
-        Vector3 destination = LevelGenerator.Instance.CellToWorld(startCell, -0.15f);
-        float distance = Vector3.Distance(transform.position, destination);
-        float travel = moveSpeed * 0.5f * deltaTime;
-        if (distance > travel && distance > 0f)
-        {
-            transform.position = Vector3.Lerp(transform.position, destination, travel / distance);
-            return;
-        }
-        transform.position = destination;
-        currentCell = targetCell = startCell;
-        segmentActive = false;
-        dead = false;
-        leavingPen = true;
-        playingState = 0;
-        PlayAnimation(currentDirection);
+        var destination=LevelGenerator.Instance.CellToWorld(startCell,-.15f);
+        float distance=Vector3.Distance(transform.position,destination),travel=StateSpeed*deltaTime;
+        if(distance>travel){transform.position=Vector3.Lerp(transform.position,destination,travel/distance);return;}
+        transform.position=destination;currentCell=targetCell=startCell;segmentActive=dead=false;leavingPen=true;circuitIndex=-1;PlayAnimation(currentDirection);
     }
-
     private List<Vector2Int> GetAvailableDirections()
     {
-        var available = new List<Vector2Int>(4);
-        foreach (Vector2Int direction in Directions)
-        {
-            if (LevelGenerator.Instance.IsGhostWalkable(currentCell + direction))
-            {
-                available.Add(direction);
-            }
-        }
-
-        return available;
+        var choices=new List<Vector2Int>(4);
+        foreach(var direction in Directions)if(LevelGenerator.Instance.IsGhostWalkable(currentCell+direction))choices.Add(direction);
+        return choices;
     }
-
     private Vector2Int ChooseDirection(List<Vector2Int> available)
     {
-        if (available.Count == 1)
-        {
-            return available[0];
-        }
-
-        if (IsFrightened)
-        {
-            Vector2Int playerCell = GameManager.Instance.Player.CurrentCell;
-            int bestDistance = int.MinValue;
-            Vector2Int best = available[0];
-            foreach (Vector2Int direction in available)
-            {
-                Vector2Int candidate = currentCell + direction;
-                int distance = Mathf.Abs(candidate.x - playerCell.x) + Mathf.Abs(candidate.y - playerCell.y);
-                distance += Random.Range(0, 3);
-                if (distance > bestDistance)
-                {
-                    bestDistance = distance;
-                    best = direction;
-                }
-            }
-
-            return best;
-        }
-
-        Vector2Int target = dead ? startCell : GetChaseTarget();
-        target = LevelGenerator.Instance.FindNearestWalkable(target);
-        int shortest = int.MaxValue;
-        Vector2Int chosen = available[0];
-        int offset = ghostIndex % available.Count;
-
-        for (int index = 0; index < available.Count; index++)
-        {
-            Vector2Int direction = available[(index + offset) % available.Count];
-            int distance = LevelGenerator.Instance.ShortestPathDistance(currentCell + direction, target);
-            if (distance < shortest)
-            {
-                shortest = distance;
-                chosen = direction;
-            }
-        }
-
-        return chosen;
+        if(IsFrightened){circuitIndex=-1;return DistanceChoice(available,false);}
+        if(ghostIndex==0)return DistanceChoice(available,false);
+        if(ghostIndex==1)return DistanceChoice(available,true);
+        if(ghostIndex==2)return available[Random.Range(0,available.Count)];
+        return ClockwiseChoice(available);
     }
-
-    private Vector2Int GetChaseTarget()
+    private Vector2Int DistanceChoice(List<Vector2Int> available,bool approach)
     {
-        PacStudentController player = GameManager.Instance.Player;
-        Vector2Int playerCell = player.CurrentCell;
-
-        switch (ghostIndex)
+        Vector2 target=GameManager.Instance.GhostTargetPosition;
+        float currentDistance=((Vector2)LevelGenerator.Instance.CellToWorld(currentCell)-target).sqrMagnitude;
+        var preferred=new List<Vector2Int>();
+        foreach(var direction in available)
         {
-            case 1:
-                return playerCell + player.FacingDirection * 4;
-            case 2:
-                return new Vector2Int(
-                    LevelGenerator.Instance.Width - 1 - playerCell.x,
-                    LevelGenerator.Instance.Height - 1 - playerCell.y);
-            case 3:
-                bool scatter = Mathf.FloorToInt(Time.time / 7f) % 2 == 1;
-                return scatter ? new Vector2Int(LevelGenerator.Instance.Width - 2, LevelGenerator.Instance.Height - 2) : playerCell;
-            default:
-                return playerCell;
+            float distance=((Vector2)LevelGenerator.Instance.CellToWorld(currentCell+direction)-target).sqrMagnitude;
+            if(approach?distance<=currentDistance:distance>=currentDistance)preferred.Add(direction);
+        }
+        // Keep moving without reversing when every legal exit violates the distance preference.
+        var choices=preferred.Count>0?preferred:available;
+        return choices[Random.Range(0,choices.Count)];
+    }
+    private void BuildOuterCircuit()
+    {
+        outerCircuit.Clear();
+        var cell=new Vector2Int(1,1);var direction=Vector2Int.right;
+        var visited=new HashSet<(Vector2Int,Vector2Int)>();
+        while(true)
+        {
+            // Keeping the outside wall on the left traces its clockwise boundary.
+            var left=new Vector2Int(direction.y,-direction.x);
+            foreach(var candidate in new[]{left,direction,-left,-direction})
+                if(LevelGenerator.Instance.IsGhostWalkable(cell+candidate)){direction=candidate;break;}
+            if(!visited.Add((cell,direction)))break;
+            outerCircuit.Add(cell);
+            cell+=direction;
         }
     }
-
+    private Vector2Int ClockwiseChoice(List<Vector2Int> available)
+    {
+        if(outerCircuit.Count==0)BuildOuterCircuit();
+        if(circuitIndex>=0 && outerCircuit[circuitIndex]!=currentCell)circuitIndex=-1;
+        if(circuitIndex<0)
+        {
+            for(int i=0;i<outerCircuit.Count;i++)
+                if(outerCircuit[i]==currentCell && available.Contains(outerCircuit[(i+1)%outerCircuit.Count]-currentCell)){circuitIndex=i;break;}
+        }
+        if(circuitIndex>=0)
+        {
+            int next=(circuitIndex+1)%outerCircuit.Count;var direction=outerCircuit[next]-currentCell;
+            if(available.Contains(direction)){circuitIndex=next;return direction;}
+            circuitIndex=-1;
+        }
+        // A breadth-first search joins the boundary after leaving the pen or recovering.
+        var boundary=new HashSet<Vector2Int>(outerCircuit);
+        var queue=new Queue<(Vector2Int cell,Vector2Int first)>();var seen=new HashSet<Vector2Int>{currentCell};
+        foreach(var direction in available){var cell=currentCell+direction;queue.Enqueue((cell,direction));seen.Add(cell);}
+        while(queue.Count>0)
+        {
+            var item=queue.Dequeue();if(boundary.Contains(item.cell))return item.first;
+            foreach(var direction in Directions){var next=item.cell+direction;if(LevelGenerator.Instance.IsGhostWalkable(next)&&seen.Add(next))queue.Enqueue((next,item.first));}
+        }
+        return available[0];
+    }
     private void PlayAnimation(Vector2Int direction)
     {
-        if (animator == null)
-        {
-            return;
-        }
-
-        string stateName;
-        if (dead)
-        {
-            stateName = "Dead";
-        }
-        else if (IsFrightened && GameManager.Instance.PowerTimeRemaining <= 3f)
-        {
-            stateName = "Recovering";
-        }
+        if(animator==null)return;
+        string name;
+        if(dead)name="Dead";
+        else if(IsFrightened && GameManager.Instance.PowerTimeRemaining<=3f)name="Recovering";
         else
         {
-            string prefix = IsFrightened ? "Scared_" : "Normal_";
-            if (direction.x > 0) stateName = prefix + "Right";
-            else if (direction.x < 0) stateName = prefix + "Left";
-            else if (direction.y < 0) stateName = prefix + "Up";
-            else stateName = prefix + "Down";
+            string prefix=IsFrightened?"Scared_":"Normal_";
+            name=prefix+(direction.x>0?"Right":direction.x<0?"Left":direction.y<0?"Up":"Down");
         }
-
-        int state = Animator.StringToHash(stateName);
-        if (state == playingState)
-        {
-            return;
-        }
-
-        playingState = state;
-        animator.Play(state, 0, 0f);
+        int hash=Animator.StringToHash(name);if(hash==playingState)return;playingState=hash;animator.Play(hash,0,0);
     }
 }

@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
     private float elapsedTime;
     private int globalGhostPhase;
     public string LevelKey => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+    public Vector2 GhostTargetPosition => player.transform.position;
 
     public static GameManager Instance { get; private set; }
     public bool ActorsCanMove => state == GameState.Playing;
