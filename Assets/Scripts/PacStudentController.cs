@@ -9,6 +9,8 @@ public class PacStudentController : MonoBehaviour
     [SerializeField] private AudioClip eatingMovementClip;
     [SerializeField] private AudioClip emptyMovementClip;
     [SerializeField] private ParticleSystem movementDust;
+    [SerializeField] private ParticleSystem wallImpact;
+    [SerializeField] private ParticleSystem deathParticles;
     [SerializeField, Min(0.01f)] private float moveSpeed = 5f;
     [SerializeField] private Vector2Int gameplayStartCell = new Vector2Int(1, 1);
     private Vector2Int currentCell, targetCell;
@@ -19,6 +21,16 @@ public class PacStudentController : MonoBehaviour
     private bool gridSegmentActive;
     public Vector2Int CurrentCell => currentCell;
     public float MoveSpeed => moveSpeed;
+    public float DeathDuration
+    {
+        get
+        {
+            if (animator != null && animator.runtimeAnimatorController != null)
+                foreach (var clip in animator.runtimeAnimatorController.animationClips)
+                    if (clip.name.Contains("Dead")) return clip.length;
+            return 1f;
+        }
+    }
     public Vector2Int FacingDirection => currentInput == Vector2Int.zero ? Vector2Int.right : currentInput;
 
     private void Awake()
@@ -49,6 +61,7 @@ public class PacStudentController : MonoBehaviour
         gridSegmentActive = false;
         SetMovementAudio(false);
         SetDust(false);
+        if (deathParticles != null) deathParticles.Play();
         if (animator != null) { animator.speed = 1f; animator.Play("Dead", 0, 0f); }
     }
     private void Update()
@@ -99,6 +112,11 @@ public class PacStudentController : MonoBehaviour
             if (lastInput != Vector2Int.zero && lastBlockedInput != lastInput)
             {
                 GameManager.Instance.NotifyWallHit();
+                if (wallImpact != null)
+                {
+                    wallImpact.transform.localPosition = new Vector3(lastInput.x * .4f, -lastInput.y * .4f, 0);
+                    wallImpact.Play();
+                }
                 lastBlockedInput = lastInput;
             }
             return false;
