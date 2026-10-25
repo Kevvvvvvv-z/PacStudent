@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class GhostAgent : MonoBehaviour
+public class GhostController : MonoBehaviour
 {
     [SerializeField, Range(0, 3)] private int ghostIndex;
     [SerializeField] private Animator animator;
