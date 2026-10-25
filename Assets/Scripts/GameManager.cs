@@ -36,7 +36,8 @@ public class GameManager : MonoBehaviour
     private float elapsedTime;
     private int globalGhostPhase;
     public string LevelKey => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-    public Vector2 GhostTargetPosition => player.transform.position;
+    public bool HasDecoy => DecoyAbility.Instance != null && DecoyAbility.Instance.IsActive;
+    public Vector2 GhostTargetPosition => HasDecoy ? DecoyAbility.Instance.Target : (Vector2)player.transform.position;
 
     public static GameManager Instance { get; private set; }
     public bool ActorsCanMove => state == GameState.Playing;
@@ -140,6 +141,7 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
+        DecoyAbility.Instance?.ResetRound();
         StopAllCoroutines();
         cherries?.ResetRound();
         score = 0;
@@ -305,6 +307,7 @@ public class GameManager : MonoBehaviour
         if (!ActorsCanMove) return;
         score += 100;
         AudioManager.Instance?.PlayBonusFruit();
+        DecoyAbility.Instance?.RefillFromCherry();
     }
 
     public void ExitToMenu()
