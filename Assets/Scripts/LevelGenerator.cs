@@ -48,6 +48,9 @@ public class LevelGenerator : MonoBehaviour
     public int Width => fullMap == null ? 0 : fullMap.GetLength(1);
     public int Height => fullMap == null ? 0 : fullMap.GetLength(0);
     public int RemainingPellets => pelletObjects.Count;
+    public bool HasPellet(Vector2Int cell) => pelletObjects.ContainsKey(cell);
+    public Bounds MapBounds => new Bounds(CellToWorld(new Vector2Int(Width - 1, Height - 1), 0f) * .5f,
+        new Vector3(Width * tileSize.x, Height * tileSize.y, 1f));
 
     private void Awake()
     {
