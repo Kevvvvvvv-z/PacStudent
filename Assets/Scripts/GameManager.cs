@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Actors")]
     [SerializeField] private PacStudentController player;
-    [SerializeField] private GhostAgent[] ghosts;
+    [SerializeField] private GhostController[] ghosts;
 
     [Header("Rules")]
     [SerializeField, Min(1)] private int startingLives = 3;
@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
     private float elapsedTime;
     private int globalGhostPhase;
     public string LevelKey => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+    public Vector2 GhostTargetPosition => player.transform.position;
 
     public static GameManager Instance { get; private set; }
     public bool ActorsCanMove => state == GameState.Playing;
@@ -63,7 +64,7 @@ public class GameManager : MonoBehaviour
 
         if (ghosts == null || ghosts.Length == 0)
         {
-            ghosts = FindObjectsByType<GhostAgent>();
+            ghosts = FindObjectsByType<GhostController>();
         }
 
         lives = startingLives;
@@ -105,7 +106,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void Configure(PacStudentController assignedPlayer, GhostAgent[] assignedGhosts, Sprite assignedBonusFruit)
+    public void Configure(PacStudentController assignedPlayer, GhostController[] assignedGhosts, Sprite assignedBonusFruit)
     {
         player = assignedPlayer;
         ghosts = assignedGhosts;
@@ -167,7 +168,7 @@ public class GameManager : MonoBehaviour
         {
             powerEndTime = Time.time + powerDuration;
 
-            foreach (GhostAgent ghost in ghosts)
+            foreach (GhostController ghost in ghosts)
             {
                 if (ghost != null && !ghost.IsDead)
                 {
@@ -224,7 +225,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        foreach (GhostAgent ghost in ghosts)
+        foreach (GhostController ghost in ghosts)
         {
             if (ghost == null || ghost.IsDead)
             {
@@ -284,7 +285,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        foreach (GhostAgent ghost in ghosts)
+        foreach (GhostController ghost in ghosts)
         {
             ghost?.ResetToStart();
         }
