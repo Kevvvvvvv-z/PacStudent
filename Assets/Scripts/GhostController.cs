@@ -105,6 +105,7 @@ public class GhostController : MonoBehaviour
     private Vector2Int ChooseDirection(List<Vector2Int> available)
     {
         if(IsFrightened){circuitIndex=-1;return DistanceChoice(available,false);}
+        if(GameManager.Instance.HasDecoy){circuitIndex=-1;return DistanceChoice(available,true);}
         if(ghostIndex==0)return DistanceChoice(available,false);
         if(ghostIndex==1)return DistanceChoice(available,true);
         if(ghostIndex==2)return available[Random.Range(0,available.Count)];
@@ -112,7 +113,7 @@ public class GhostController : MonoBehaviour
     }
     private Vector2Int DistanceChoice(List<Vector2Int> available,bool approach)
     {
-        Vector2 target=GameManager.Instance.GhostTargetPosition;
+        Vector2 target=IsFrightened ? (Vector2)GameManager.Instance.Player.transform.position : GameManager.Instance.GhostTargetPosition;
         float currentDistance=((Vector2)LevelGenerator.Instance.CellToWorld(currentCell)-target).sqrMagnitude;
         var preferred=new List<Vector2Int>();
         foreach(var direction in available)
