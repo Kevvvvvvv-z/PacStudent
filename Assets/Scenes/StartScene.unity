@@ -3361,6 +3361,10 @@ MonoBehaviour:
   effects: {fileID: 1957837976}
   clickSound: {fileID: 8300000, guid: b33ee1e3421bbfc41ae8b41bb4c36512, type: 3}
   levelOneScene: Level01
+  level1Score: {fileID: 2138761288}
+  level1Time: {fileID: 830011735}
+  level2Score: {fileID: 105946827}
+  level2Time: {fileID: 610328320}
   borderSpeed: 90
 --- !u!4 &938096305
 Transform:

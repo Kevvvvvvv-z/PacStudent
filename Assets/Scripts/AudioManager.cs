@@ -76,11 +76,16 @@ public class AudioManager : MonoBehaviour
 
     private void Update()
     {
-        if (introPlaying && Time.time >= introEndTime)
+        if (introPlaying && Time.time >= introEndTime && (GameManager.Instance == null || GameManager.Instance.State != GameManager.GameState.Countdown))
         {
             introPlaying = false;
             PlayRequestedMusic();
         }
+    }
+    public void FinishIntro()
+    {
+        introPlaying = false;
+        PlayRequestedMusic();
     }
 
     private void OnDestroy()
