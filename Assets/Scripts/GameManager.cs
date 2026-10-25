@@ -34,6 +34,8 @@ public class GameManager : MonoBehaviour
     private float powerEndTime;
     private string countdownText;
     private float elapsedTime;
+    private int globalGhostPhase;
+    public string LevelKey => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
     public static GameManager Instance { get; private set; }
     public bool ActorsCanMove => state == GameState.Playing;
@@ -84,6 +86,12 @@ public class GameManager : MonoBehaviour
             powerEndTime = 0f;
 
         }
+        int ghostPhase = !IsPowerActive ? 0 : PowerTimeRemaining <= 3f ? 2 : 1;
+        if (ghostPhase != globalGhostPhase)
+        {
+            globalGhostPhase = ghostPhase;
+            foreach (var ghost in ghosts) if (ghost != null) ghost.RefreshStateAnimation();
+        }
 
         UpdateMusic();
         CheckGhostCollisions();
@@ -125,6 +133,7 @@ public class GameManager : MonoBehaviour
 
         state = GameState.Playing;
         player?.BeginRound();
+        AudioManager.Instance?.FinishIntro();
         UpdateMusic();
     }
 
@@ -171,6 +180,7 @@ public class GameManager : MonoBehaviour
         if (remaining == 0)
         {
             state = GameState.Won;
+            SaveResult();
             StartCoroutine(ReturnAfterGameOver());
             AudioManager.Instance?.SetGhostMode(AudioManager.GhostMusicMode.Normal);
             return;
@@ -243,17 +253,18 @@ public class GameManager : MonoBehaviour
     private IEnumerator HandlePlayerDeath()
     {
         state = GameState.Dying;
+        lives--;
         powerEndTime = 0f;
 
         cherries?.ResetRound();
         player?.PlayDeathAnimation();
         AudioManager.Instance?.PlayDeath();
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(player == null ? 1f : player.DeathDuration);
 
-        lives--;
         if (lives <= 0)
         {
             state = GameState.Lost;
+            SaveResult();
             StartCoroutine(ReturnAfterGameOver());
         }
         else
@@ -306,4 +317,5 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
         UnityEngine.SceneManagement.SceneManager.LoadScene("StartScene");
     }
+    private void SaveResult() => ScoreStore.SaveResult(LevelKey, score, Mathf.FloorToInt(elapsedTime * 100f));
 }

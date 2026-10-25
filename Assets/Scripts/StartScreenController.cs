@@ -10,9 +10,20 @@ public class StartScreenController : MonoBehaviour
     [SerializeField] private AudioSource effects;
     [SerializeField] private AudioClip clickSound;
     [SerializeField] private string levelOneScene = "Level01";
+    [SerializeField] private Text level1Score, level1Time, level2Score, level2Time;
     [SerializeField, Min(1f)] private float borderSpeed = 90f;
     private float travelled;
     private bool loading;
+    private void Start()
+    {
+        ShowRecord("Level01", level1Score, level1Time);
+        ShowRecord("InnovationScene", level2Score, level2Time);
+    }
+    private static void ShowRecord(string level, Text score, Text time)
+    {
+        if (score != null) score.text = "BEST  " + ScoreStore.BestScore(level).ToString("D6");
+        if (time != null) time.text = "TIME  " + ScoreStore.FormatTime(ScoreStore.BestTime(level));
+    }
 
     private void Update()
     {
