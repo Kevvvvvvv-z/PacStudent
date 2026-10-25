@@ -70,6 +70,7 @@ public class PacStudentController : MonoBehaviour
         {
             SetMovementAudio(false);
             SetDust(false);
+            if (animator != null && (GameManager.Instance == null || GameManager.Instance.State != GameManager.GameState.Dying)) animator.speed = 0f;
             return;
         }
         ReadKeyboardInput();

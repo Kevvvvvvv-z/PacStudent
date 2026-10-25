@@ -10,6 +10,7 @@ public class StartScreenController : MonoBehaviour
     [SerializeField] private AudioSource effects;
     [SerializeField] private AudioClip clickSound;
     [SerializeField] private string levelOneScene = "Level01";
+    [SerializeField] private string levelTwoScene = "InnovationScene";
     [SerializeField] private Text level1Score, level1Time, level2Score, level2Time;
     [SerializeField, Min(1f)] private float borderSpeed = 90f;
     private float travelled;
@@ -60,7 +61,9 @@ public class StartScreenController : MonoBehaviour
     public void PreviewLevelTwo()
     {
         if (loading) return;
+        loading = true;
         if (effects != null && clickSound != null) effects.PlayOneShot(clickSound);
-        if (levelTwoStatus != null) levelTwoStatus.text = "A NEW ADVENTURE IS GROWING";
+        Invoke(nameof(LoadLevelTwo), .15f);
     }
+    private void LoadLevelTwo() => SceneManager.LoadScene(levelTwoScene);
 }
