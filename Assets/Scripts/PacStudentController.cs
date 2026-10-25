@@ -6,6 +6,9 @@ public class PacStudentController : MonoBehaviour
 {
     [SerializeField] private Animator animator;
     [SerializeField] private AudioSource movementAudioSource;
+    [SerializeField] private AudioClip eatingMovementClip;
+    [SerializeField] private AudioClip emptyMovementClip;
+    [SerializeField] private ParticleSystem movementDust;
     [SerializeField, Min(0.01f)] private float moveSpeed = 5f;
     [SerializeField] private Vector2Int gameplayStartCell = new Vector2Int(1, 1);
     private Vector2Int currentCell, targetCell;
@@ -15,6 +18,7 @@ public class PacStudentController : MonoBehaviour
     private float segmentElapsed, segmentDuration;
     private bool gridSegmentActive;
     public Vector2Int CurrentCell => currentCell;
+    public float MoveSpeed => moveSpeed;
     public Vector2Int FacingDirection => currentInput == Vector2Int.zero ? Vector2Int.right : currentInput;
 
     private void Awake()
@@ -23,7 +27,7 @@ public class PacStudentController : MonoBehaviour
         if (movementAudioSource == null) movementAudioSource = GetComponent<AudioSource>();
     }
     private void Start() => PrepareRound();
-    private void OnDisable() => SetMovementAudio(false);
+    private void OnDisable() { SetMovementAudio(false); SetDust(false); }
     public void PrepareRound()
     {
         currentCell = gameplayStartCell;
@@ -44,6 +48,7 @@ public class PacStudentController : MonoBehaviour
     {
         gridSegmentActive = false;
         SetMovementAudio(false);
+        SetDust(false);
         if (animator != null) { animator.speed = 1f; animator.Play("Dead", 0, 0f); }
     }
     private void Update()
@@ -51,6 +56,7 @@ public class PacStudentController : MonoBehaviour
         if (GameManager.Instance == null || !GameManager.Instance.ActorsCanMove)
         {
             SetMovementAudio(false);
+            SetDust(false);
             return;
         }
         ReadKeyboardInput();
@@ -106,12 +112,19 @@ public class PacStudentController : MonoBehaviour
         gridSegmentActive = true;
         PlayDirectionalAnimation(currentInput);
         if (animator != null) animator.speed = 1f;
+        if (movementAudioSource != null)
+        {
+            AudioClip desiredClip = level.HasPellet(targetCell) ? eatingMovementClip : emptyMovementClip;
+            if (movementAudioSource.clip != desiredClip) { movementAudioSource.Stop(); movementAudioSource.clip = desiredClip; }
+        }
         SetMovementAudio(true);
+        SetDust(true);
         return true;
     }
     private void StopWalking()
     {
         SetMovementAudio(false);
+        SetDust(false);
         if (animator != null) animator.speed = 0f;
     }
     private void PlayDirectionalAnimation(Vector2Int direction)
@@ -126,5 +139,11 @@ public class PacStudentController : MonoBehaviour
         movementAudioSource.loop = true;
         if (playing && !movementAudioSource.isPlaying) movementAudioSource.Play();
         else if (!playing && movementAudioSource.isPlaying) movementAudioSource.Stop();
+    }
+    private void SetDust(bool moving)
+    {
+        if (movementDust == null) return;
+        if (moving && !movementDust.isPlaying) movementDust.Play();
+        else if (!moving && movementDust.isPlaying) movementDust.Stop(true, ParticleSystemStopBehavior.StopEmitting);
     }
 }

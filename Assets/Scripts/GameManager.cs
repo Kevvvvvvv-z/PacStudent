@@ -26,20 +26,13 @@ public class GameManager : MonoBehaviour
     [SerializeField, Min(1f)] private float powerDuration = 10f;
     [SerializeField, Min(0.1f)] private float collisionDistance = 0.48f;
 
-    [Header("Bonus fruit")]
-    [SerializeField] private Sprite bonusFruitSprite;
-    [SerializeField] private Vector2Int bonusFruitCell = new Vector2Int(13, 23);
-    [SerializeField, Min(1f)] private float bonusFruitLifetime = 12f;
+    [SerializeField] private CherryController cherries;
 
     private GameState state;
     private int score;
     private int lives;
-    private int initialPelletCount;
     private float powerEndTime;
     private string countdownText;
-    private bool bonusFruitWasSpawned;
-    private GameObject bonusFruit;
-    private float bonusFruitEndTime;
     private float elapsedTime;
 
     public static GameManager Instance { get; private set; }
@@ -72,7 +65,6 @@ public class GameManager : MonoBehaviour
         }
 
         lives = startingLives;
-        initialPelletCount = LevelGenerator.Instance == null ? 0 : LevelGenerator.Instance.RemainingPellets;
         PrepareActors();
         StartCoroutine(StartCountdown());
     }
@@ -93,7 +85,6 @@ public class GameManager : MonoBehaviour
 
         }
 
-        UpdateBonusFruit();
         UpdateMusic();
         CheckGhostCollisions();
     }
@@ -110,7 +101,6 @@ public class GameManager : MonoBehaviour
     {
         player = assignedPlayer;
         ghosts = assignedGhosts;
-        bonusFruitSprite = assignedBonusFruit;
     }
 
     private IEnumerator StartCountdown()
@@ -141,16 +131,14 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         StopAllCoroutines();
-        DestroyBonusFruit();
+        cherries?.ResetRound();
         score = 0;
         elapsedTime = 0f;
         lives = startingLives;
         powerEndTime = 0f;
 
-        bonusFruitWasSpawned = false;
 
         LevelGenerator.Instance?.GenerateLevel();
-        initialPelletCount = LevelGenerator.Instance == null ? 0 : LevelGenerator.Instance.RemainingPellets;
         PrepareActors();
         StartCoroutine(StartCountdown());
         AudioManager.Instance?.SetGhostMode(AudioManager.GhostMusicMode.Normal);
@@ -188,10 +176,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (!bonusFruitWasSpawned && initialPelletCount > 0 && remaining <= initialPelletCount / 2)
-        {
-            SpawnBonusFruit();
-        }
     }
 
     public void NotifyWallHit()
@@ -261,7 +245,7 @@ public class GameManager : MonoBehaviour
         state = GameState.Dying;
         powerEndTime = 0f;
 
-        DestroyBonusFruit();
+        cherries?.ResetRound();
         player?.PlayDeathAnimation();
         AudioManager.Instance?.PlayDeath();
         yield return new WaitForSeconds(1.2f);
@@ -304,52 +288,11 @@ public class GameManager : MonoBehaviour
         AudioManager.Instance?.SetGhostMode(mode);
     }
 
-    private void SpawnBonusFruit()
+    public void NotifyCherryCollected()
     {
-        bonusFruitWasSpawned = true;
-        if (bonusFruitSprite == null || LevelGenerator.Instance == null)
-        {
-            return;
-        }
-
-        Vector2Int cell = LevelGenerator.Instance.FindNearestWalkable(bonusFruitCell);
-        bonusFruit = new GameObject("BonusFruit");
-        var renderer = bonusFruit.AddComponent<SpriteRenderer>();
-        renderer.sprite = bonusFruitSprite;
-        renderer.sortingOrder = 6;
-        bonusFruit.transform.position = LevelGenerator.Instance.CellToWorld(cell, -0.2f);
-        bonusFruitEndTime = Time.time + bonusFruitLifetime;
-        bonusFruitCell = cell;
-    }
-
-    private void UpdateBonusFruit()
-    {
-        if (bonusFruit == null)
-        {
-            return;
-        }
-
-        if (Time.time >= bonusFruitEndTime)
-        {
-            DestroyBonusFruit();
-            return;
-        }
-
-        if (player != null && player.CurrentCell == bonusFruitCell)
-        {
-            score += 100;
-            AudioManager.Instance?.PlayBonusFruit();
-            DestroyBonusFruit();
-        }
-    }
-
-    private void DestroyBonusFruit()
-    {
-        if (bonusFruit != null)
-        {
-            Destroy(bonusFruit);
-            bonusFruit = null;
-        }
+        if (!ActorsCanMove) return;
+        score += 100;
+        AudioManager.Instance?.PlayBonusFruit();
     }
 
     public void ExitToMenu()
